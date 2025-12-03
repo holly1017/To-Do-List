@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">To-Do List</string>
+    <string-array name="category_options">
+        <item>STUDY</item>
+        <item>WORK</item>
+        <item>ETC</item>
+    </string-array>
+</resources>
