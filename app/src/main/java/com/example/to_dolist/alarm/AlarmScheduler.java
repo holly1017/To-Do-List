@@ -4,8 +4,9 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log; // 디버깅을 위해 Log 임포트
-import com.example.to_dolist.data.Task;
+import android.util.Log;
+import com.example.to_dolist.data.TodoItem;
+
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale; // 시간 파싱 및 로깅을 위해 임포트
@@ -16,9 +17,9 @@ public class AlarmScheduler {
     private static final String TAG = "AlarmScheduler";
     private static final long ONE_HOUR_IN_MILLIS = 60 * 60 * 1000;
 
-    public static void scheduleAlarm(Context context, Task task) {
+    public static void scheduleAlarm(Context context, TodoItem item) {
         // dueTime이 null이거나 비어있으면 알림 등록을 건너뜁니다.
-        if (task.getDueTime() == null || task.getDueTime().isEmpty()) {
+        if (item.getDueTime() == null || item.getDueTime().isEmpty()) {
             return;
         }
 
@@ -26,13 +27,13 @@ public class AlarmScheduler {
         Intent intent = new Intent(context, AlarmReceiver.class);
 
         // Task ID를 PendingIntent 고유 ID로 사용
-        long alarmId = task.getId();
+        long alarmId = item.getId();
 
         // long 타입인 alarmId를 int로 변환하여 PendingIntent에 사용 (int 범위 내여야 함)
         int requestCode = (int) alarmId;
 
         // 알림에 필요한 데이터 추가
-        intent.putExtra("TASK_TITLE", task.getTitle());
+        intent.putExtra("TASK_TITLE", item.getTitle());
         intent.putExtra("TASK_ID", alarmId);
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
@@ -43,17 +44,17 @@ public class AlarmScheduler {
         );
 
         // 마감 시간 1시간 전 시간 (밀리초) 계산
-        long triggerTimeMillis = getTriggerTimeMillis(task.getDueTime());
+        long triggerTimeMillis = getTriggerTimeMillis(item.getDueTime());
         long triggerTimeOneHourBefore = triggerTimeMillis - ONE_HOUR_IN_MILLIS;
 
         // 현재 시간보다 늦게 트리거되도록 확인
         if (triggerTimeOneHourBefore > System.currentTimeMillis()) {
-            Log.d(TAG, "Alarm Scheduled for: " + task.getTitle() + " at " + new Date(triggerTimeOneHourBefore));
+            Log.d(TAG, "Alarm Scheduled for: " + item.getTitle() + " at " + new Date(triggerTimeOneHourBefore));
 
             // RQ-0004: 알림 발송 로직 (AlarmManager 사용)
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTimeOneHourBefore, pendingIntent);
         } else {
-            Log.w(TAG, "Alarm time already passed for: " + task.getTitle());
+            Log.w(TAG, "Alarm time already passed for: " + item.getTitle());
             // 이미 시간이 지났다면 알림 등록하지 않음
             cancelAlarm(context, requestCode);
         }
