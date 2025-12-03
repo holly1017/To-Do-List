@@ -90,7 +90,7 @@
                 android:id="@+id/filter_uncompeleted"
                 android:layout_width="28dp"
                 android:layout_height="match_parent"
-                android:buttonTint="@android:color/black"s
+                android:buttonTint="@android:color/black"
                 android:checked="false"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
