@@ -12,7 +12,7 @@ public class TodoItemDbHelper extends SQLiteOpenHelper {
     public static final String TABLE_NAME = "todoitem";
     public static final String COLUMN_ID = "id";
     public static final String COLUMN_TITLE = "title";
-    public static final String COLUMN_CATEGORY_ID = "category_id "; // RQ-0007
+    public static final String COLUMN_CATEGORY_ID = "category_id"; // RQ-0007
     public static final String COLUMN_DUE_TIME = "due_time"; // HH:MM 형식의 시간 (TEXT)
     public static final String COLUMN_IS_COMPLETED = "is_completed"; // RQ-0005 (0: false, 1: true)
 

@@ -13,8 +13,12 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        String title = intent.getStringExtra("TASK_TITLE");
-        int taskId = intent.getIntExtra("TASK_ID", 0);
+        String title = intent.getStringExtra("TITLE");
+
+        long longId = intent.getLongExtra("ID", 0L);
+
+        // Notification ID는 int 타입이므로, long 값을 int로 변환하여 사용합니다.
+        int intId = (int) longId;
 
         NotificationManager notificationManager =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -37,6 +41,7 @@ public class AlarmReceiver extends BroadcastReceiver {
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true);
 
-        notificationManager.notify(taskId, builder.build());
+        // 알림 ID로 taskId(int)를 사용
+        notificationManager.notify(intId, builder.build());
     }
 }
