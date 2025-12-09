@@ -262,15 +262,16 @@ public class MainActivity extends AppCompatActivity {
         newItem.setId(id);
 
         // 2. 알람 스케줄링 (dueTime이 있을 경우)
+        // 2. 알람 스케줄링 (dueTime이 있을 경우)
         if (newItem.getDueTime() != null) {
-            // 알람 권한 확인 후 스케줄링 시도
+
+            // 🔥 ① 기존 Notification 알람 (원하면 삭제 가능)
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
                     ((AlarmManager) getSystemService(Context.ALARM_SERVICE)).canScheduleExactAlarms()) {
                 AlarmScheduler.scheduleAlarm(this, newItem);
-            } else {
-                Toast.makeText(this, "알람 권한이 없어 알람 설정은 생략됩니다.", Toast.LENGTH_LONG).show();
             }
         }
+
 
         // 3. UI 업데이트 및 입력 필드 초기화
         todoInputField.setText("");

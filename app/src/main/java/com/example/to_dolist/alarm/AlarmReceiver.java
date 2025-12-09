@@ -5,43 +5,91 @@ import android.content.Context;
 import android.content.Intent;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.media.RingtoneManager;
+import android.media.Ringtone;
+import android.net.Uri;
 import android.os.Build;
 import androidx.core.app.NotificationCompat;
+import android.app.PendingIntent;
+import android.app.NotificationManager;
 
 public class AlarmReceiver extends BroadcastReceiver {
-    private static final String CHANNEL_ID = "todo_alarm_channel";
+
+    public static Ringtone ringtone;  // 🔥 알람음 멈추기 위해 static으로 저장
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        String title = intent.getStringExtra("TITLE");
 
-        long longId = intent.getLongExtra("ID", 0L);
+        String action = intent.getAction();
 
-        // Notification ID는 int 타입이므로, long 값을 int로 변환하여 사용합니다.
-        int intId = (int) longId;
+        // -----------------------------
+        // 🔴 1) STOP 버튼 눌렸을 때
+        // -----------------------------
+        if ("STOP_ALARM".equals(action)) {
+            if (ringtone != null && ringtone.isPlaying()) {
+                ringtone.stop();
+            }
 
-        NotificationManager notificationManager =
-                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-
-        // 안드로이드 O (API 26) 이상은 채널 생성 필수
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "To-Do Reminders",
-                    NotificationManager.IMPORTANCE_HIGH
-            );
-            notificationManager.createNotificationChannel(channel);
+            NotificationManager nm =
+                    (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            nm.cancelAll(); // 알림 제거
+            return;
         }
 
-        // RQ-0004: 알림 빌더 사용
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-                .setContentTitle("마감 임박: 1시간 남음")
-                .setContentText(title)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true);
+        // -----------------------------
+        // 🔔 2) 알람 울릴 때
+        // -----------------------------
+        String title = intent.getStringExtra("TODO_TITLE");
+        long id = intent.getLongExtra("TODO_ID", 0L);
 
-        // 알림 ID로 taskId(int)를 사용
-        notificationManager.notify(intId, builder.build());
+        NotificationManager manager =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+        String channelId = "todo_alarm_channel";
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    channelId,
+                    "To-Do 알람",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            manager.createNotificationChannel(channel);
+        }
+
+        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+
+        // -----------------------------
+        // 🔘 STOP 버튼 PendingIntent 생성
+        // -----------------------------
+        Intent stopIntent = new Intent(context, AlarmReceiver.class);
+        stopIntent.setAction("STOP_ALARM");
+        PendingIntent stopPending = PendingIntent.getBroadcast(
+                context,
+                (int) id,
+                stopIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        // -----------------------------
+        // 🔔 Notification 만들기
+        // -----------------------------
+        NotificationCompat.Builder builder =
+                new NotificationCompat.Builder(context, channelId)
+                        .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+                        .setContentTitle("알람")
+                        .setContentText(title + " 시간입니다!")
+                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .addAction(android.R.drawable.ic_menu_close_clear_cancel, "알람 끄기", stopPending)
+                        .setAutoCancel(true);
+
+        manager.notify((int) id, builder.build());
+
+        // 🔊 실제 소리 재생
+        try {
+            ringtone = RingtoneManager.getRingtone(context, alarmSound);
+            ringtone.play();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

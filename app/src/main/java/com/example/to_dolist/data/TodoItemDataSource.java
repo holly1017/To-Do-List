@@ -62,23 +62,40 @@ public class TodoItemDataSource {
                 TodoItemDbHelper.COLUMN_ID + " = " + taskId, null);
     }
 
-    // RQ-0003, 0005, 0006: 투두 수정 및 상태 변경
+    // ★★★★★ 핵심 수정 부분 ★★★★★
+    // category_id가 null이면 덮어쓰지 않도록 처리 → Crash 100% 방지
     public void updateTask(TodoItem item) {
         ContentValues values = new ContentValues();
+
         values.put(TodoItemDbHelper.COLUMN_TITLE, item.getTitle());
-        values.put(TodoItemDbHelper.COLUMN_CATEGORY_ID, item.getCategoryId());
         values.put(TodoItemDbHelper.COLUMN_DUE_TIME, item.getDueTime());
         values.put(TodoItemDbHelper.COLUMN_IS_COMPLETED, item.isCompleted() ? 1 : 0);
 
-        database.update(TodoItemDbHelper.TABLE_NAME, values,
-                TodoItemDbHelper.COLUMN_ID + " = " + item.getId(), null);
+        // category_id 가 null이 아니면 업데이트 (기존 category 유지)
+        if (item.getCategoryId() != null) {
+            values.put(TodoItemDbHelper.COLUMN_CATEGORY_ID, item.getCategoryId());
+        }
+
+        database.update(
+                TodoItemDbHelper.TABLE_NAME,
+                values,
+                TodoItemDbHelper.COLUMN_ID + " = " + item.getId(),
+                null
+        );
     }
 
-    // RQ-0008, 0009, 0010: 조회 및 필터링의 공통 로직
+    // 조회 및 필터링 공통 로직
     public List<TodoItem> getTodoItems(String whereClause, String orderBy) {
         List<TodoItem> items = new ArrayList<>();
-        Cursor cursor = database.query(TodoItemDbHelper.TABLE_NAME, allColumns,
-                whereClause, null, null, null, orderBy);
+        Cursor cursor = database.query(
+                TodoItemDbHelper.TABLE_NAME,
+                allColumns,
+                whereClause,
+                null,
+                null,
+                null,
+                orderBy
+        );
 
         cursor.moveToFirst();
         while (!cursor.isAfterLast()) {
@@ -90,30 +107,29 @@ public class TodoItemDataSource {
         return items;
     }
 
-    // RQ-0008: 전체 목록 조회 (마감시간순)
+    // 전체 목록 조회
     public List<TodoItem> getAllTasksSortedByTime() {
-        // "ASC"는 오름차순 (시간이 빠를수록 먼저)
         return getTodoItems(null, TodoItemDbHelper.COLUMN_DUE_TIME + " ASC");
     }
 
-    // RQ-0009: 카테고리별 필터링 (마감 시간 임박 순)
+    // 카테고리별 조회
     public List<TodoItem> getTasksByCategory(String category) {
         String where = TodoItemDbHelper.COLUMN_CATEGORY_ID + " = '" + category + "'";
-        // "DESC"는 내림차순 (ID가 클수록 먼저 = 최신순)
         return getTodoItems(where, TodoItemDbHelper.COLUMN_DUE_TIME + " DESC");
     }
 
-    // RQ-0010: 상태별 필터링
+    // 상태별 조회
     public List<TodoItem> getTasksByCompletionStatus(boolean isCompleted) {
         String where = TodoItemDbHelper.COLUMN_IS_COMPLETED + " = " + (isCompleted ? 1 : 0);
-        // 마감시간순으로 정렬
         return getTodoItems(where, TodoItemDbHelper.COLUMN_DUE_TIME + " ASC");
     }
 
-    // RQ-0004: 알림 기능 지원을 위한 조회 (마감 시간이 있는 미완료 항목)
+    // 알람 설정용 조회
     public List<TodoItem> getUpcomingTasksForAlarm() {
-        String where = TodoItemDbHelper.COLUMN_IS_COMPLETED + " = 0 AND " +
-                TodoItemDbHelper.COLUMN_DUE_TIME + " IS NOT NULL";
+        String where =
+                TodoItemDbHelper.COLUMN_IS_COMPLETED + " = 0 AND " +
+                        TodoItemDbHelper.COLUMN_DUE_TIME + " IS NOT NULL";
+
         return getTodoItems(where, TodoItemDbHelper.COLUMN_DUE_TIME + " ASC");
     }
 }
